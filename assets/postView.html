@@ -1,0 +1,63 @@
+{{define "indexSinglePOST"}}
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    {{template "head"}}
+    <title>{{.Title}}</title>
+</head>
+
+<body>
+    <div class="uk-container uk-width-5-6">
+        <!-- HEADER -->
+        {{template "header"}}
+        <!-- CONTENT -->
+        <div class="uk-text-center" uk-grid>
+            <div class="uk-width-1-5">
+                <div class="uk-card uk-card-default uk-card-body">Left</div>
+            </div>
+            <div class="uk-width-3-5">
+                <div class="uk-card uk-card-default uk-card-body">
+                    {{template "onepostcontent" .Post}}
+                </div>
+            </div>
+            <div class="uk-width-1-5">
+                <div class="uk-card uk-card-default uk-card-body">Right</div>
+            </div>
+        </div>
+        <!-- FOOTER -->
+        {{template "footer"}}
+    </div>
+</body>
+
+</html>
+{{end}}
+
+{{define "onepostcontent"}}
+<article class="uk-article">
+
+    <h1 class="uk-article-title"><a class="uk-link-reset" href="">{{.Title}}</a></h1>
+
+    <p class="uk-article-meta">Written by <a href="#">{{.Author.Name}}</a> on 12 April 2012. Posted in <a
+            href="#">{{.Rubric.Title}}</a>
+    </p>
+
+    <p class="uk-text-lead">some short text</p>
+
+    <p>{{.Content}}</p>
+
+    <div class="uk-grid-small uk-child-width-auto" uk-grid>
+        <div>
+            <a class="uk-button uk-button-text" href="#">Read more</a>
+        </div>
+        <div>
+            <a class="uk-button uk-button-text" href="#">5 Comments</a>
+        </div>
+        <div class="uk-align-right">
+            <a href="/posts/{{.ID}}/edit" uk-tooltip="edit me" uk-icon="pencil"></a>
+        </div>
+
+    </div>
+
+</article>
+{{end}}

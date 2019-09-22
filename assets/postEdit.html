@@ -1,0 +1,62 @@
+{{define "indexEditPOST"}}
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    {{template "head"}}
+    <title>{{.Title}}</title>
+</head>
+
+<body>
+    <div class="uk-container uk-width-5-6">
+        <!-- HEADER -->
+        {{template "header"}}
+        <!-- CONTENT -->
+        <div class="uk-text-center" uk-grid>
+            <div class="uk-width-1-5">
+                <div class="uk-card uk-card-default uk-card-body">Left</div>
+            </div>
+            <div class="uk-width-3-5">
+                <div class="uk-card uk-card-default uk-card-body">
+                    {{template "editPost" .Post}}
+                </div>
+            </div>
+            <div class="uk-width-1-5">
+                <div class="uk-card uk-card-default uk-card-body">Right</div>
+            </div>
+        </div>
+        <!-- FOOTER -->
+        {{template "footer"}}
+    </div>
+</body>
+
+</html>
+{{end}}
+
+
+{{define "editPost"}}
+<form action="/posts/{{.ID}}" method="PUT" id="formPostEdit">
+    <fieldset class="uk-fieldset">
+
+        <legend class="uk-legend">Редактирование статьи</legend>
+
+        <div class="uk-margin">
+            <input class="uk-input" name="title" type="text" placeholder="Input" value="{{.Title}}">
+        </div>
+
+        <div class="uk-margin">
+            <select class="uk-select" name="rubric">
+                <option value="Go for fun">Go for fun</option>
+                <option value="Go for cry">Go for cry</option>
+            </select>
+        </div>
+
+        <div class="uk-margin">
+            <textarea class="uk-textarea" rows="10" placeholder="blog content" name="content">{{.Content}}</textarea>
+        </div>
+
+    </fieldset>
+    <button type="submit" form="formPostEdit" class="uk-button uk-button-default">Save</button>
+    <input type="hidden" name="_method" value="PUT">
+</form>
+{{end}}
