@@ -188,6 +188,7 @@ type User struct {
 	ModifiedAt string `json:"modified_at"`
 	UserRole   int    `json:"userrole"`
 	Salt       string `json:"salt"`
+	Avatar     string `json:"avatar"`
 	// and more other properties
 }
 

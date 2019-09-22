@@ -10,11 +10,12 @@ create table users
     created_at datetime default CURRENT_TIMESTAMP null,
     modified_at datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP,
     user_role int default -1 not null,
-    salt varchar(25) default 'saltsalt' not null
+    salt varchar(25) default 'saltsalt' not null,
+    avatar_url varchar(512) null
 );
 
 -- insert default user
-insert into users (id, username, nick, email) VALUES ('00000000-0000-0000-00000000', 'anonimous', 'anonimous', 'user@example.com');
+insert into users (id, username, nick, email, avatar_url) VALUES ('00000000-0000-0000-00000000', 'anonimous', 'anonimous', 'user@example.com', 'https://getuikit.com/docs/images/avatar.jpg');
 
 drop table if exists rubrics;
 create table rubrics

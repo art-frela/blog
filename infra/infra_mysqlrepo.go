@@ -147,8 +147,8 @@ func (myr *MySQLPostRepository) Update(p domain.PostInBlog) error {
 // fillExampleData fills SimplePostRepo with fake posts exactly N pieces,
 // but no more 50th
 func (myr *MySQLPostRepository) fillExampleData(n int) {
-	if n > 50 || n <= 0 { // simple fuse
-		n = 10
+	if n > 3 || n <= 0 { // simple fuse
+		n = 3
 	}
 	//newID := uuid.Must(uuid.NewV4()).String()
 	postTmpl := domain.PostInBlog{

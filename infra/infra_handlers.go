@@ -10,10 +10,12 @@ import (
 	"github.com/art-frela/blog/domain"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
+	"github.com/microcosm-cc/bluemonday"
+	bf "gopkg.in/russross/blackfriday.v2"
 )
 
 const (
-	templatePOSTS = "./assets/*.html"
+	templatePOSTS = "./assets/templates/*.html"
 	postID        = "id"
 	//httpTimeOut   = 30 * time.Second
 )
@@ -34,6 +36,11 @@ func NewPostController(repo domain.PostRepository) *PostController {
 	return pc
 }
 
+// RedirectToPosts - simple redirect for posts url
+func (pc *PostController) RedirectToPosts(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/posts", http.StatusSeeOther)
+}
+
 // GetPosts - handler func for search query text at the Sites
 func (pc *PostController) GetPosts(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.Atoi(r.FormValue("limit"))
@@ -46,11 +53,11 @@ func (pc *PostController) GetPosts(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrServerInternal(err))
 		return
 	}
-	if len(posts) == 0 {
-		err = fmt.Errorf("not found no one post in the repository")
-		render.Render(w, r, ErrNotFound(err))
-		return
-	}
+	// if len(posts) == 0 {
+	// 	err = fmt.Errorf("not found no one post in the repository")
+	// 	render.Render(w, r, ErrNotFound(err))
+	// 	return
+	// }
 	data := templatePostsFill{
 		Title: "POSTS",
 		Posts: posts,
@@ -108,12 +115,20 @@ func (pc *PostController) WriteNewPost(w http.ResponseWriter, r *http.Request) {
 // UpdPost - handler func for update post in the Storage
 func (pc *PostController) UpdPost(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, postID)
+	params := &NewPostRequest{}
+	if err := render.Bind(r, params); err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+	contentBts := []byte(params.Content)
+	contentMD := bf.Run(contentBts)
+	contentSafeHTML := bluemonday.UGCPolicy().SanitizeBytes(contentMD)
 	newpost := domain.PostInBlog{
 		ID:      id,
-		Title:   r.FormValue("title"),
-		Content: r.FormValue("content"),
+		Title:   params.Title,
+		Content: string(contentSafeHTML),
 		Rubric: domain.Rubric{
-			Title: r.FormValue("rubric"),
+			ID: params.RubricID,
 		},
 	}
 	oldpost, err := pc.PostRepo.FindByID(id)
@@ -139,26 +154,33 @@ func (pc *PostController) UpdPost(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrServerInternal(err))
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	render.Render(w, r, OkStatus(id))
 }
 
 // AddNewPost - handler func for save new post in the storage
 func (pc *PostController) AddNewPost(w http.ResponseWriter, r *http.Request) {
+	params := &NewPostRequest{}
+	if err := render.Bind(r, params); err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+	contentBts := []byte(params.Content)
+	contentMD := bf.Run(contentBts)
+	contentSafeHTML := bluemonday.UGCPolicy().SanitizeBytes(contentMD)
 	newpost := domain.PostInBlog{
-		Title:   r.FormValue("title"),
-		Content: r.FormValue("content"),
+		Title:   params.Title,
+		Content: string(contentSafeHTML),
 		Rubric: domain.Rubric{
-			Title: r.FormValue("rubric"),
+			ID: params.RubricID,
 		},
 	}
 	id, err := pc.PostRepo.Save(newpost)
 	if err != nil {
+		err = fmt.Errorf("try to save new post %v, error %v", newpost, err)
 		render.Render(w, r, ErrServerInternal(err))
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
-
-	w.Write([]byte("/posts/" + id))
+	render.Render(w, r, OkStatusCreated(id))
 }
 
 type templatePostsFill struct {
@@ -223,3 +245,47 @@ func ErrNotFound(err error) render.Renderer {
 
 // ErrUnsupportedFormat - 415 error implementation
 var ErrUnsupportedFormat = &ErrResponse{HTTPStatusCode: http.StatusUnsupportedMediaType, StatusText: "415 - Unsupported Media Type. Please send JSON"}
+
+// NewPostRequest contract with front-end for posts creating
+type NewPostRequest struct {
+	Title    string `json:"title"`
+	RubricID string `json:"rubric_id"`
+	Content  string `json:"content"`
+	UserID   string `json:"user_id"`
+}
+
+// Bind - implement Bind method for chi.render interface
+func (npr *NewPostRequest) Bind(r *http.Request) error {
+	return nil
+}
+
+// SuccessResponse structure for json response success results
+type SuccessResponse struct {
+	Message        string `json:"message"`  // low-level runtime error
+	HTTPStatusCode int    `json:"httpcode"` // http response status code
+	StatusText     string `json:"status"`   // user-level status message
+}
+
+// Render - implement Render method for chi.render interface
+func (sr *SuccessResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	render.Status(r, sr.HTTPStatusCode)
+	return nil
+}
+
+// OkStatusCreated rendered func for HTTP 201 Created response
+func OkStatusCreated(message string) render.Renderer {
+	return &SuccessResponse{
+		Message:        message,
+		HTTPStatusCode: http.StatusCreated,
+		StatusText:     http.StatusText(http.StatusCreated),
+	}
+}
+
+// OkStatus rendered func for HTTP 200 OK response
+func OkStatus(message string) render.Renderer {
+	return &SuccessResponse{
+		Message:        message,
+		HTTPStatusCode: http.StatusOK,
+		StatusText:     http.StatusText(http.StatusOK),
+	}
+}

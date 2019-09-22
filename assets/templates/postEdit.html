@@ -35,28 +35,27 @@
 
 
 {{define "editPost"}}
-<form action="/posts/{{.ID}}" method="PUT" id="formPostEdit">
+<div class="post_form_edit" post-id="{{.ID}}">
     <fieldset class="uk-fieldset">
 
         <legend class="uk-legend">Редактирование статьи</legend>
 
         <div class="uk-margin">
-            <input class="uk-input" name="title" type="text" placeholder="Input" value="{{.Title}}">
+            <input class="uk-input post_title_edit" name="title" type="text" placeholder="Тема статьи" value="{{.Title}}">
         </div>
 
         <div class="uk-margin">
-            <select class="uk-select" name="rubric">
-                <option value="Go for fun">Go for fun</option>
-                <option value="Go for cry">Go for cry</option>
+            <select class="uk-select post_rubric_edit" name="rubric">
+                <option value="00000000-0000-0000-00000000">Go for fun</option>
+                <option value="00000000-0000-0000-00000001">Go for cry</option>
             </select>
         </div>
 
         <div class="uk-margin">
-            <textarea class="uk-textarea" rows="10" placeholder="blog content" name="content">{{.Content}}</textarea>
+            <textarea class="uk-textarea post_content_edit" rows="10" placeholder="blog content" name="content">{{.Content}}</textarea>
         </div>
 
     </fieldset>
-    <button type="submit" form="formPostEdit" class="uk-button uk-button-default">Save</button>
-    <input type="hidden" name="_method" value="PUT">
-</form>
+    <button class="uk-button uk-button-default saveeditpost" task-id="{{.ID}}">Save</button>
+</div>
 {{end}}
