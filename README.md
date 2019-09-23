@@ -27,6 +27,5 @@ for creating database `blog` you need privileges to drop and create database and
     - use mysql-client `mysql < ./db/blog.sql`
     - OR use go `go run ./db/dbmigrate.sql`
 - set MySQL connection string `export DATABASE_URL=root:master@tcp(localhost:3306)/blog`
+- navigate to directory with `asset` folder  
 - start `blog`
-
-
