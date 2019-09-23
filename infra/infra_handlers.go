@@ -1,6 +1,7 @@
 package infra
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -78,8 +79,15 @@ func (pc *PostController) GetOnePost(w http.ResponseWriter, r *http.Request) {
 		Title: post.Title,
 		Post:  post,
 	}
+	post.Content = string(template.HTML(bf.Run([]byte(post.Content))))
+	var b bytes.Buffer // no need to show bad content
 	tmpl := template.Must(template.New("indexSinglePOST").ParseGlob(templatePOSTS))
-	tmpl.ExecuteTemplate(w, "indexSinglePOST", data)
+	err = tmpl.ExecuteTemplate(&b, "indexSinglePOST", data)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	b.WriteTo(w)
 }
 
 // EditPost - handler func for exposeedit form for Posts
@@ -164,12 +172,12 @@ func (pc *PostController) AddNewPost(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
-	contentBts := []byte(params.Content)
-	contentMD := bf.Run(contentBts)
-	contentSafeHTML := bluemonday.UGCPolicy().SanitizeBytes(contentMD)
+	// contentBts := []byte(params.Content)
+	// contentMD := bf.Run(contentBts)
+	// contentSafeHTML := bluemonday.UGCPolicy().SanitizeBytes(contentMD)
 	newpost := domain.PostInBlog{
 		Title:   params.Title,
-		Content: string(contentSafeHTML),
+		Content: params.Content,
 		Rubric: domain.Rubric{
 			ID: params.RubricID,
 		},
