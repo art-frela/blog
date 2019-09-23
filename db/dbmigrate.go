@@ -11,7 +11,7 @@ import (
 
 var (
 	queries = [][]string{
-		{"drop", `drop database blog;`},
+		{"drop", `drop database if exists blog;`},
 		{"createDB", `create database blog;`},
 		{"users", `create table blog.users
 					(

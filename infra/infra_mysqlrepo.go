@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/art-frela/blog/domain"
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql" // mysql driver
 	"github.com/gofrs/uuid"
 )
 
@@ -20,7 +20,7 @@ type MySQLPostRepository struct {
 }
 
 // NewMySQLPostRepository returns MySQL post repository
-func NewMySQLPostRepository(mysqlURL string, logger *logrus.Logger) *MySQLPostRepository {
+func NewMySQLPostRepository(mysqlURL string, logger *logrus.Logger, countExamplePosts int, clearStorage bool) *MySQLPostRepository {
 	repo := &MySQLPostRepository{}
 	repo.log = logger
 	db, err := sql.Open("mysql", mysqlURL)
@@ -34,8 +34,23 @@ func NewMySQLPostRepository(mysqlURL string, logger *logrus.Logger) *MySQLPostRe
 		repo.log.Fatalf("error open connection to mysql server, %v", err)
 	}
 	repo.db = db
-	repo.fillExampleData(20)
+	if clearStorage {
+		repo.clearPosts()
+	}
+	repo.fillExampleData(countExamplePosts)
 	return repo
+}
+
+// clearPosts - clears posts table
+func (myr *MySQLPostRepository) clearPosts() error {
+	q := `delete from posts;`
+	result, err := myr.db.Exec(q)
+	if err != nil {
+		return err
+	}
+	rowAffected, _ := result.RowsAffected()
+	myr.log.Debug("clear blog.posts success, row affected %d", rowAffected)
+	return nil
 }
 
 // FindByID implement post repository for map[string]Posts
@@ -55,7 +70,6 @@ func (myr *MySQLPostRepository) FindByID(id string) (domain.PostInBlog, error) {
 	if err != nil {
 		return post, err
 	}
-
 	//TODO: add search user by ID and fill user structure
 	post.SetAuthor(author)
 	postTags := &domain.Tags{}

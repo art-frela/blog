@@ -1,7 +1,6 @@
 package infra
 
 import (
-	"bytes"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -11,7 +10,6 @@ import (
 	"github.com/art-frela/blog/domain"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
-	"github.com/microcosm-cc/bluemonday"
 	bf "gopkg.in/russross/blackfriday.v2"
 )
 
@@ -59,6 +57,9 @@ func (pc *PostController) GetPosts(w http.ResponseWriter, r *http.Request) {
 	// 	render.Render(w, r, ErrNotFound(err))
 	// 	return
 	// }
+	for i, p := range posts {
+		posts[i].Content = template.HTML(bf.Run([]byte(p.Content)))
+	}
 	data := templatePostsFill{
 		Title: "POSTS",
 		Posts: posts,
@@ -75,19 +76,13 @@ func (pc *PostController) GetOnePost(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrServerInternal(err))
 		return
 	}
+	post.Content = template.HTML(bf.Run([]byte(post.Content))) // use blackfriday for markdown to html view
 	data := templateOnePostFill{
 		Title: post.Title,
 		Post:  post,
 	}
-	post.Content = string(template.HTML(bf.Run([]byte(post.Content))))
-	var b bytes.Buffer // no need to show bad content
 	tmpl := template.Must(template.New("indexSinglePOST").ParseGlob(templatePOSTS))
-	err = tmpl.ExecuteTemplate(&b, "indexSinglePOST", data)
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-	b.WriteTo(w)
+	tmpl.ExecuteTemplate(w, "indexSinglePOST", data)
 }
 
 // EditPost - handler func for exposeedit form for Posts
@@ -128,13 +123,10 @@ func (pc *PostController) UpdPost(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
-	contentBts := []byte(params.Content)
-	contentMD := bf.Run(contentBts)
-	contentSafeHTML := bluemonday.UGCPolicy().SanitizeBytes(contentMD)
 	newpost := domain.PostInBlog{
 		ID:      id,
 		Title:   params.Title,
-		Content: string(contentSafeHTML),
+		Content: template.HTML(params.Content),
 		Rubric: domain.Rubric{
 			ID: params.RubricID,
 		},
@@ -177,7 +169,7 @@ func (pc *PostController) AddNewPost(w http.ResponseWriter, r *http.Request) {
 	// contentSafeHTML := bluemonday.UGCPolicy().SanitizeBytes(contentMD)
 	newpost := domain.PostInBlog{
 		Title:   params.Title,
-		Content: params.Content,
+		Content: template.HTML(params.Content),
 		Rubric: domain.Rubric{
 			ID: params.RubricID,
 		},

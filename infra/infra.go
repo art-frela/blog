@@ -21,10 +21,10 @@ type BlogServer struct {
 }
 
 // NewBlogServer is builder for BlogServer
-func NewBlogServer(mysqlURL string) *BlogServer {
+func NewBlogServer(mysqlURL string, countExamplePosts int, clearStorage bool) *BlogServer {
 	bs := &BlogServer{}
 	logger := logrus.New()
-	pr := NewMySQLPostRepository(mysqlURL, logger)
+	pr := NewMySQLPostRepository(mysqlURL, logger, countExamplePosts, clearStorage)
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)

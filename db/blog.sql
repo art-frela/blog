@@ -1,3 +1,5 @@
+drop database if exists blog;
+create database blog;
 -- create table scope
 use blog;
 drop table if exists users;

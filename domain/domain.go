@@ -1,5 +1,9 @@
 package domain
 
+import (
+	"html/template"
+)
+
 const (
 	// PostStateWrite - state of post when it only creating by Author
 	PostStateWrite = "write"
@@ -23,19 +27,19 @@ const (
 
 // PostInBlog - main entity my blog, like story in livejournal
 type PostInBlog struct {
-	ID           string   `json:"id"`
-	Title        string   `json:"title"`
-	Author       User     `json:"author"`
-	Rubric       Rubric   `json:"rubric"`
-	Content      string   `json:"content"`
-	Tags         Tags     `json:"tags"`
-	State        string   `json:"state"`
-	CreatedAt    string   `json:"created_at"`  // RFC3339/ISO8601
-	ModifiedAt   string   `json:"modified_at"` // RFC3339/ISO8601
-	ParentPostID string   `json:"parent_post_id"`
-	CountOfViews int64    `json:"count_of_views"`
-	CountOfStars int64    `json:"count_of_stars"`
-	CommentsIDs  []string `json:"comments_ids"`
+	ID           string        `json:"id"`
+	Title        string        `json:"title"`
+	Author       User          `json:"author"`
+	Rubric       Rubric        `json:"rubric"`
+	Content      template.HTML `json:"content"`
+	Tags         Tags          `json:"tags"`
+	State        string        `json:"state"`
+	CreatedAt    string        `json:"created_at"`  // RFC3339/ISO8601
+	ModifiedAt   string        `json:"modified_at"` // RFC3339/ISO8601
+	ParentPostID string        `json:"parent_post_id"`
+	CountOfViews int64         `json:"count_of_views"`
+	CountOfStars int64         `json:"count_of_stars"`
+	CommentsIDs  []string      `json:"comments_ids"`
 }
 
 // PostRepository - storage of Posts
@@ -79,7 +83,7 @@ func (p *PostInBlog) SetRubric(rubric Rubric) *PostInBlog {
 // SetContent - setter for ID
 func (p *PostInBlog) SetContent(content string) *PostInBlog {
 	// TODO: add XSS checker
-	p.Content = content
+	p.Content = template.HTML(content)
 	return p
 }
 
