@@ -1,0 +1,6 @@
+mysql:
+  dbname: "blog"
+  user: "root"
+  pass: "master"
+  host: "elk-01"
+  sslmode: "false"

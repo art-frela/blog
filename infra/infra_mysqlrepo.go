@@ -1,14 +1,16 @@
 package infra
 
 import (
+	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/sirupsen/logrus"
+	"github.com/volatiletech/sqlboiler/boil"
+	"github.com/volatiletech/sqlboiler/queries/qm"
 
 	"github.com/art-frela/blog/domain"
+	"github.com/art-frela/blog/models"
 	_ "github.com/go-sql-driver/mysql" // mysql driver
 	"github.com/gofrs/uuid"
 )
@@ -17,6 +19,7 @@ import (
 type MySQLPostRepository struct {
 	db  *sql.DB
 	log *logrus.Logger
+	ctx context.Context
 }
 
 // NewMySQLPostRepository returns MySQL post repository
@@ -34,53 +37,30 @@ func NewMySQLPostRepository(mysqlURL string, logger *logrus.Logger, countExample
 		repo.log.Fatalf("error open connection to mysql server, %v", err)
 	}
 	repo.db = db
+	boil.SetDB(db)
+	ctx := context.Background()
+	repo.ctx = ctx
 	if clearStorage {
-		repo.clearPosts()
+
+		rowsAff, err := models.Posts().DeleteAll(repo.ctx, repo.db)
+		if err != nil {
+			repo.log.Errorf("error delete all posts from database, %v", err)
+		}
+		repo.log.Infof("deleted all (%d) posts from database, ", rowsAff)
+
 	}
 	repo.fillExampleData(countExamplePosts)
 	return repo
 }
 
-// clearPosts - clears posts table
-func (myr *MySQLPostRepository) clearPosts() error {
-	q := `delete from posts;`
-	result, err := myr.db.Exec(q)
-	if err != nil {
-		return err
-	}
-	rowAffected, _ := result.RowsAffected()
-	myr.log.Debug("clear blog.posts success, row affected %d", rowAffected)
-	return nil
-}
-
 // FindByID implement post repository for map[string]Posts
 func (myr *MySQLPostRepository) FindByID(id string) (domain.PostInBlog, error) {
-	q := `select 
-			id, title, author_id, rubric_id, COALESCE(tags, ''), state, content, created_at, modified_at, 
-			COALESCE(parent_post_id, ''), count_of_views, count_of_stars, COALESCE(comments_ids, '') 
-		  from posts 
-		  where id=?;`
-	row := myr.db.QueryRow(q, id)
-	var post domain.PostInBlog
-	var author domain.User
-	var tags, comments string // string
-	err := row.Scan(&post.ID, &post.Title, &author.ID, &post.Rubric.ID, &tags, &post.State, &post.Content,
-		&post.CreatedAt, &post.ModifiedAt, &post.ParentPostID, &post.CountOfViews,
-		&post.CountOfStars, &comments)
+	post := domain.PostInBlog{}
+	modelPost, err := models.FindPost(myr.ctx, myr.db, id)
 	if err != nil {
 		return post, err
 	}
-	//TODO: add search user by ID and fill user structure
-	post.SetAuthor(author)
-	postTags := &domain.Tags{}
-	err = json.NewDecoder(strings.NewReader(string(tags))).Decode(postTags)
-	if err != nil {
-		myr.log.Warnf("error unmarshalling tags, %v, set default value [\"post\"]", err)
-		*postTags = domain.Tags{"post"}
-	}
-	post.SetTags(*postTags)
-	// TODO: set task to get comments
-
+	post = convertModelPostToDomainPost(*modelPost)
 	return post, nil
 }
 
@@ -88,39 +68,13 @@ func (myr *MySQLPostRepository) FindByID(id string) (domain.PostInBlog, error) {
 // returns slice of posts
 func (myr *MySQLPostRepository) Find(limit, offset int) ([]domain.PostInBlog, error) {
 	posts := make([]domain.PostInBlog, 0, 16)
-	q := fmt.Sprintf(`select 
-			id, title, author_id, rubric_id, COALESCE(tags, ''), state, content, created_at, modified_at, 
-			COALESCE(parent_post_id, ''), count_of_views, count_of_stars, COALESCE(comments_ids, '') 
-		  from posts where state='%s' order by count_of_stars desc limit ? offset ?;`,
-		domain.PostStatePublic)
-	rows, err := myr.db.Query(q, limit, offset)
+	modelPosts, err := models.Posts(qm.Limit(limit), qm.Offset(offset)).All(myr.ctx, myr.db)
 	if err != nil {
 		return posts, err
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var post domain.PostInBlog
-		var author domain.User
-		var tags, comments string
-		err := rows.Scan(&post.ID, &post.Title, &author.ID, &post.Rubric.ID, &tags, &post.State, &post.Content,
-			&post.CreatedAt, &post.ModifiedAt, &post.ParentPostID, &post.CountOfViews,
-			&post.CountOfStars, &comments)
-		if err != nil {
-			return posts, err
-		}
-		//TODO: add search user by ID and fill user structure
-		post.SetAuthor(author)
-		postTags := &domain.Tags{}
-		err = json.NewDecoder(strings.NewReader(tags)).Decode(postTags)
-		if err != nil {
-			myr.log.Warnf("error unmarshalling tags, %v, set default value [\"post\"]", err)
-			*postTags = domain.Tags{"post"}
-		}
-		post.SetTags(*postTags)
-		// TODO: set task to get comments
-		posts = append(posts, post)
+	for _, p := range modelPosts {
+		posts = append(posts, convertModelPostToDomainPost(*p))
 	}
-
 	return posts, nil
 }
 
@@ -131,16 +85,14 @@ func (myr *MySQLPostRepository) Save(p domain.PostInBlog) (string, error) {
 	templPost := p.GetTemplatePost()
 	p.ID = newID
 	p.State = templPost.State
-	// TODO: after implement rubric and author at the fron GUI, del thih mock
+	// TODO: after implement rubric and author at the fron GUI, del this mock
 	p.Rubric.ID = "00000000-0000-0000-00000000"
 	p.Author.ID = domain.AnonimousID
-	q := `insert into posts (id, title, rubric_id, content, author_id, state) values(?,?,?,?,?,?)`
-	result, err := myr.db.Exec(q, p.ID, p.Title, p.Rubric.ID, p.Content, p.Author.ID, p.State)
+	modelPost := convertDomainPostToModelPost(p)
+	err := modelPost.Insert(myr.ctx, myr.db, boil.Infer())
 	if err != nil {
-		return newID, err
+		return "", err
 	}
-	rowAffected, _ := result.RowsAffected()
-	myr.log.Debug("new post create succesfull, row affected %d", rowAffected)
 	return newID, nil
 }
 
@@ -148,14 +100,13 @@ func (myr *MySQLPostRepository) Save(p domain.PostInBlog) (string, error) {
 // update exists post in the map
 func (myr *MySQLPostRepository) Update(p domain.PostInBlog) error {
 	// TODO: add validator fot id, title, content etc...
-	q := `update posts set title=?, content=? where id=?`
-	result, err := myr.db.Exec(q, p.Title, p.Content, p.ID)
+	postModel, err := models.FindPost(myr.ctx, myr.db, p.ID)
 	if err != nil {
 		return err
 	}
-	rowAffected, _ := result.RowsAffected()
-	myr.log.Debugf("update postID=%s (%d rows affected)", p.ID, rowAffected)
-	return nil
+	*postModel = convertDomainPostToModelPost(p)
+	_, err = postModel.Update(myr.ctx, myr.db, boil.Infer())
+	return err
 }
 
 // fillExampleData fills SimplePostRepo with fake posts exactly N pieces,
@@ -200,4 +151,28 @@ func (myr *MySQLPostRepository) fillExampleData(n int) {
 			myr.log.Errorf("for post=%+v, error %v", post, err)
 		}
 	}
+}
+
+// convertModelPostToDomainPost - return domainPost make from model post
+func convertModelPostToDomainPost(post models.Post) domain.PostInBlog {
+	targetPost := domain.PostInBlog{}
+	targetPost.SetID(post.ID)
+	targetPost.SetContent(post.Content)
+	targetPost.Author.ID = post.AuthorID.String
+	targetPost.SetTitle(post.Title)
+	targetPost.Rubric.ID = post.RubricID.String
+	return targetPost
+}
+
+// convertDomainPostToModelPost - return model post  make from domain post
+func convertDomainPostToModelPost(post domain.PostInBlog) models.Post {
+	targetPost := models.Post{}
+	targetPost.ID = post.ID
+	targetPost.Title = post.Title
+	targetPost.Content = string(post.Content)
+	targetPost.AuthorID.String = post.Author.ID
+	targetPost.RubricID.String = post.Rubric.ID
+	targetPost.State.String = post.State
+	targetPost.CountOfViews = int(post.CountOfViews)
+	return targetPost
 }
