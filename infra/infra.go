@@ -53,8 +53,8 @@ func (bs *BlogServer) Run(hostPort string) {
 func (bs *BlogServer) registerRoutes() {
 	bs.mux.Route("/posts", func(r chi.Router) {
 		r.Get("/", bs.controller.GetPosts)
-		r.Get("/{"+postID+"}", bs.controller.GetOnePost)
-		r.Get("/{"+postID+"}/edit", bs.controller.EditPost)
+		r.Get("/{id}", bs.controller.GetOnePost)
+		r.Get("/{id}/edit", bs.controller.EditPost)
 		r.Get("/new", bs.controller.WriteNewPost)
 
 		//r.Post("/", bs.controller.AddNewPost)
@@ -64,7 +64,7 @@ func (bs *BlogServer) registerRoutes() {
 			r.Use(filterContentType)
 			//r.Get("/", bs.controller.GetPostJSON) // TODO: implement
 			r.Post("/", bs.controller.AddNewPost)
-			r.Put("/{"+postID+"}", bs.controller.UpdPost)
+			r.Put("/{id}", bs.controller.UpdPost)
 		})
 	})
 	bs.mux.Route("/", func(r chi.Router) {

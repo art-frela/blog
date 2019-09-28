@@ -110,7 +110,7 @@ func (myr *MySQLPostRepository) Update(p domain.PostInBlog) error {
 }
 
 // fillExampleData fills SimplePostRepo with fake posts exactly N pieces,
-// but no more 50th
+// but no more 3rd
 func (myr *MySQLPostRepository) fillExampleData(n int) {
 	if n > 3 || n <= 0 { // simple fuse
 		n = 3

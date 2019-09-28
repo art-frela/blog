@@ -14,9 +14,7 @@ import (
 )
 
 const (
-	templatePOSTS = "./assets/templates/*.html"
-	postID        = "id"
-	//httpTimeOut   = 30 * time.Second
+	templatePATH = "./assets/templates/*.html"
 )
 
 // [HANDLER FUNCS]
@@ -64,13 +62,13 @@ func (pc *PostController) GetPosts(w http.ResponseWriter, r *http.Request) {
 		Title: "POSTS",
 		Posts: posts,
 	}
-	tmpl := template.Must(template.New("indexPOST").ParseGlob(templatePOSTS))
+	tmpl := template.Must(template.New("indexPOST").ParseGlob(templatePATH))
 	tmpl.ExecuteTemplate(w, "indexPOST", data)
 }
 
-// GetOnePost - handler func for search query text at the Sites
+// GetOnePost returns the one specified by id post from storage
 func (pc *PostController) GetOnePost(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, postID)
+	id := chi.URLParam(r, "id")
 	post, err := pc.PostRepo.FindByID(id)
 	if err != nil {
 		render.Render(w, r, ErrServerInternal(err))
@@ -81,13 +79,13 @@ func (pc *PostController) GetOnePost(w http.ResponseWriter, r *http.Request) {
 		Title: post.Title,
 		Post:  post,
 	}
-	tmpl := template.Must(template.New("indexSinglePOST").ParseGlob(templatePOSTS))
+	tmpl := template.Must(template.New("indexSinglePOST").ParseGlob(templatePATH))
 	tmpl.ExecuteTemplate(w, "indexSinglePOST", data)
 }
 
-// EditPost - handler func for exposeedit form for Posts
+// EditPost - handler func for expose edit form for Posts
 func (pc *PostController) EditPost(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, postID)
+	id := chi.URLParam(r, "id")
 	post, err := pc.PostRepo.FindByID(id)
 	if err != nil {
 		render.Render(w, r, ErrServerInternal(err))
@@ -97,11 +95,11 @@ func (pc *PostController) EditPost(w http.ResponseWriter, r *http.Request) {
 		Title: post.Title,
 		Post:  post,
 	}
-	tmpl := template.Must(template.New("indexEditPOST").ParseGlob(templatePOSTS))
+	tmpl := template.Must(template.New("indexEditPOST").ParseGlob(templatePATH))
 	tmpl.ExecuteTemplate(w, "indexEditPOST", data)
 }
 
-// WriteNewPost - handler func for expose edit form for new Posts
+// WriteNewPost - handler func for expose edit form for new Post
 func (pc *PostController) WriteNewPost(w http.ResponseWriter, r *http.Request) {
 	post := domain.PostInBlog{
 		Title:   "",
@@ -111,13 +109,13 @@ func (pc *PostController) WriteNewPost(w http.ResponseWriter, r *http.Request) {
 		Title: post.Title,
 		Post:  post,
 	}
-	tmpl := template.Must(template.New("indexNewPOST").ParseGlob(templatePOSTS))
+	tmpl := template.Must(template.New("indexNewPOST").ParseGlob(templatePATH))
 	tmpl.ExecuteTemplate(w, "indexNewPOST", data)
 }
 
 // UpdPost - handler func for update post in the Storage
 func (pc *PostController) UpdPost(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, postID)
+	id := chi.URLParam(r, "id")
 	params := &NewPostRequest{}
 	if err := render.Bind(r, params); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
@@ -261,7 +259,7 @@ func (npr *NewPostRequest) Bind(r *http.Request) error {
 
 // SuccessResponse structure for json response success results
 type SuccessResponse struct {
-	Message        string `json:"message"`  // low-level runtime error
+	Message        string `json:"message"`  // text of message
 	HTTPStatusCode int    `json:"httpcode"` // http response status code
 	StatusText     string `json:"status"`   // user-level status message
 }
