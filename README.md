@@ -4,7 +4,7 @@
 
 * [x] add MySQL storage
 * [x] separete api methods and web
-* [ ] add MongoDB storage
+* [x] add MongoDB storage
 * [ ] add using BeeGo framework
 * [ ] add config app
 * [ ] add clear logging
@@ -17,15 +17,24 @@
 
 ### How to use
 
-![important] 
+![important]
+
+For storage your posts you can use MySQL or MongoDB.
+
+#### MySQL
+
 you must have connection to MySQL server > 8.X  
 for creating database `blog` you need privileges to drop and create database and tables  
 
+#### MongoDB
+
+you must have connection to MongoDB server > 3.X  
+
 - install to $GOPATH `go get -u github.com/art-frela/blog`
 - help `blog -h`
-- prepare database
+- prepare database in MySQL
     - use mysql-client `mysql < ./db/blog.sql`
     - OR use go `go run ./db/dbmigrate.sql`
-- set MySQL connection string `export DATABASE_URL=root:master@tcp(localhost:3306)/blog`
+- set Storage connection string for MySQL `export DATABASE_URL=root:master@tcp(localhost:3306)/blog?parseTime=true`, for MongoDB `export DATABASE_URL=mongodb://locaslhost:27017`
 - navigate to directory with `asset` folder  
 - start `blog`
