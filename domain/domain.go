@@ -27,19 +27,19 @@ const (
 
 // PostInBlog - main entity my blog, like story in livejournal
 type PostInBlog struct {
-	ID           string        `json:"id"`
-	Title        string        `json:"title"`
-	Author       User          `json:"author"`
-	Rubric       Rubric        `json:"rubric"`
-	Content      template.HTML `json:"content"`
-	Tags         Tags          `json:"tags"`
-	State        string        `json:"state"`
-	CreatedAt    string        `json:"created_at"`  // RFC3339/ISO8601
-	ModifiedAt   string        `json:"modified_at"` // RFC3339/ISO8601
-	ParentPostID string        `json:"parent_post_id"`
-	CountOfViews int64         `json:"count_of_views"`
-	CountOfStars int64         `json:"count_of_stars"`
-	CommentsIDs  []string      `json:"comments_ids"`
+	ID           interface{}   `json:"id" bson:"_id,omitempty"`
+	Title        string        `json:"title" bson:"title"`
+	Author       User          `json:"author" bson:"author"`
+	Rubric       Rubric        `json:"rubric" bson:"rubric"`
+	Content      template.HTML `json:"content" bson:"content"`
+	Tags         Tags          `json:"tags" bson:"tags"`
+	State        string        `json:"state" bson:"state"`
+	CreatedAt    string        `json:"created_at" bson:"created_at"`   // RFC3339/ISO8601
+	ModifiedAt   string        `json:"modified_at" bson:"modified_at"` // RFC3339/ISO8601
+	ParentPostID string        `json:"parent_post_id" bson:"parent_post_id"`
+	CountOfViews int64         `json:"count_of_views" bson:"count_of_views"`
+	CountOfStars int64         `json:"count_of_stars" bson:"count_of_stars"`
+	CommentsIDs  []string      `json:"comments_ids" bson:"comments_ids"`
 }
 
 // PostRepository - storage of Posts
@@ -184,15 +184,15 @@ func (p *PostInBlog) GetTemplatePost() PostInBlog {
 
 // User is any one who visit my blog
 type User struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	Nick       string `json:"nick"`
-	EMail      string `json:"email"`
-	CreatedAt  string `json:"created_at"`
-	ModifiedAt string `json:"modified_at"`
-	UserRole   int    `json:"userrole"`
-	Salt       string `json:"salt"`
-	Avatar     string `json:"avatar"`
+	ID         string `json:"id" bson:"_id,omitempty"`
+	Name       string `json:"name" bson:"name"`
+	Nick       string `json:"nick" bson:"nick"`
+	EMail      string `json:"email" bson:"email"`
+	CreatedAt  string `json:"created_at" bson:"created_at"`
+	ModifiedAt string `json:"modified_at" bson:"modified_at"`
+	UserRole   int    `json:"userrole" bson:"userrole"`
+	Salt       string `json:"salt" bson:"salt"`
+	Avatar     string `json:"avatar" bson:"avatar"`
 	// and more other properties
 }
 
@@ -213,9 +213,9 @@ func (ur *User) isAdmin() bool {
 
 // Rubric is topic or headline of Post
 type Rubric struct {
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
+	ID          string `json:"id" bson:"_id,omitempty"`
+	Title       string `json:"title" bson:"title"`
+	Description string `json:"description" bson:"description"`
 }
 
 // Tags - slice of labels/Tags
@@ -223,11 +223,11 @@ type Tags []string
 
 // CommentOfPost is single comment for some Post
 type CommentOfPost struct {
-	ID           string `json:"id"`
-	Author       User   `json:"author"`
-	Content      string `json:"content"`
-	CountOfStars int64  `json:"count_of_stars"`
-	PostID       string `json:"postid"`
+	ID           string `json:"id" bson:"_id,omitempty"`
+	Author       User   `json:"author" bson:"author"`
+	Content      string `json:"content" bson:"content"`
+	CountOfStars int64  `json:"count_of_stars" bson:"count_of_stars"`
+	PostID       string `json:"postid" bson:"postid"`
 }
 
 // CommentsOfPost is slice of comments

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/art-frela/blog/domain"
+
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
@@ -21,10 +23,11 @@ type BlogServer struct {
 }
 
 // NewBlogServer is builder for BlogServer
-func NewBlogServer(mysqlURL string, countExamplePosts int, clearStorage bool) *BlogServer {
+func NewBlogServer(storageURL string, countExamplePosts int, clearStorage bool) *BlogServer {
 	bs := &BlogServer{}
 	logger := logrus.New()
-	pr := NewMySQLPostRepository(mysqlURL, logger, countExamplePosts, clearStorage)
+	storageType := defineStorageType(storageURL)
+	pr := NewPostStorage(storageType, storageURL, logger, countExamplePosts, clearStorage)
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
@@ -41,6 +44,16 @@ func NewBlogServer(mysqlURL string, countExamplePosts int, clearStorage bool) *B
 	bs.log = logger
 	bs.controller = NewPostController(pr)
 	return bs
+}
+
+// NewPostStorage looks like AbstractFactory of PostRepositories
+func NewPostStorage(storageType string, storageURL string, logger *logrus.Logger, countExamplePosts int, clearStorage bool) domain.PostRepository {
+	switch storageType {
+	case "mysql":
+		return NewMySQLPostRepository(storageURL, logger, countExamplePosts, clearStorage)
+	default:
+		return NewMongoPostRepo(storageURL, logger, countExamplePosts, clearStorage)
+	}
 }
 
 // Run is running blogServer
@@ -125,4 +138,13 @@ func FileServer(r chi.Router, path string, root http.FileSystem) {
 	r.Get(path, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fs.ServeHTTP(w, r)
 	}))
+}
+
+// defineStorageType helper for define storage type by connection string
+func defineStorageType(storageURL string) string {
+	storageType := "mysql"
+	if strings.HasPrefix(strings.ToLower(storageURL), "mongodb") {
+		storageType = "mongo"
+	}
+	return storageType
 }

@@ -41,13 +41,11 @@ func NewMySQLPostRepository(mysqlURL string, logger *logrus.Logger, countExample
 	ctx := context.Background()
 	repo.ctx = ctx
 	if clearStorage {
-
 		rowsAff, err := models.Posts().DeleteAll(repo.ctx, repo.db)
 		if err != nil {
 			repo.log.Errorf("error delete all posts from database, %v", err)
 		}
 		repo.log.Infof("deleted all (%d) posts from database, ", rowsAff)
-
 	}
 	repo.fillExampleData(countExamplePosts)
 	return repo
@@ -85,7 +83,7 @@ func (myr *MySQLPostRepository) Save(p domain.PostInBlog) (string, error) {
 	templPost := p.GetTemplatePost()
 	p.ID = newID
 	p.State = templPost.State
-	// TODO: after implement rubric and author at the fron GUI, del this mock
+	// TODO: after implement rubric and author at the front GUI, del this mock
 	p.Rubric.ID = "00000000-0000-0000-00000000"
 	p.Author.ID = domain.AnonimousID
 	modelPost := convertDomainPostToModelPost(p)
@@ -100,7 +98,7 @@ func (myr *MySQLPostRepository) Save(p domain.PostInBlog) (string, error) {
 // update exists post in the map
 func (myr *MySQLPostRepository) Update(p domain.PostInBlog) error {
 	// TODO: add validator fot id, title, content etc...
-	postModel, err := models.FindPost(myr.ctx, myr.db, p.ID)
+	postModel, err := models.FindPost(myr.ctx, myr.db, p.ID.(string))
 	if err != nil {
 		return err
 	}
@@ -167,7 +165,7 @@ func convertModelPostToDomainPost(post models.Post) domain.PostInBlog {
 // convertDomainPostToModelPost - return model post  make from domain post
 func convertDomainPostToModelPost(post domain.PostInBlog) models.Post {
 	targetPost := models.Post{}
-	targetPost.ID = post.ID
+	targetPost.ID = post.ID.(string)
 	targetPost.Title = post.Title
 	targetPost.Content = string(post.Content)
 	targetPost.AuthorID.String = post.Author.ID
