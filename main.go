@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"os"
+	"os/signal"
 
 	"github.com/art-frela/blog/infra"
 )
@@ -14,6 +15,13 @@ func main() {
 	httpPORT := flag.String("p", ":8888", "Host:TCPPort for HTTP server")
 	flag.Parse()
 
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt)
+
 	server := infra.NewBlogServer(*connSTR, *countExamplePosts, *clearStorage)
-	server.Run(*httpPORT)
+	srv := server.Run(*httpPORT)
+
+	// Waiting for SIGINT (pkill -2)
+	<-stop
+	server.Stop(srv)
 }

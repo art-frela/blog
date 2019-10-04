@@ -1,6 +1,7 @@
 package infra
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -57,10 +58,26 @@ func NewPostStorage(storageType string, storageURL string, logger *logrus.Logger
 }
 
 // Run is running blogServer
-func (bs *BlogServer) Run(hostPort string) {
+func (bs *BlogServer) Run(hostPort string) *http.Server {
+	srv := &http.Server{Addr: hostPort, Handler: bs.mux}
 	bs.registerRoutes()
 	bs.log.Infof("http server starting on the [%s] tcp port", hostPort)
-	bs.log.Fatal(http.ListenAndServe(hostPort, bs.mux))
+	go func() {
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			bs.log.Fatalf("http server error: %v", err)
+		}
+	}()
+	return srv
+}
+
+// Stop is stopping blogServer
+func (bs *BlogServer) Stop(srv *http.Server) {
+	bs.log.Info("http server stopping")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		bs.log.Errorf("http server stopping error, %v", err)
+	}
 }
 
 func (bs *BlogServer) registerRoutes() {

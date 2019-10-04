@@ -10,11 +10,13 @@ import (
 	"github.com/art-frela/blog/domain"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
+	"go.mongodb.org/mongo-driver/mongo"
 	bf "gopkg.in/russross/blackfriday.v2"
 )
 
-const (
+var (
 	templatePATH = "./assets/templates/*.html"
+	postNotfound = mongo.ErrNoDocuments
 )
 
 // [HANDLER FUNCS]
@@ -42,8 +44,11 @@ func (pc *PostController) RedirectToPosts(w http.ResponseWriter, r *http.Request
 func (pc *PostController) GetPosts(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.Atoi(r.FormValue("limit"))
 	offset, _ := strconv.Atoi(r.FormValue("offset"))
-	if limit == 0 {
+	if limit <= 0 {
 		limit = 50
+	}
+	if offset < 0 {
+		offset = 0
 	}
 	posts, err := pc.PostRepo.Find(limit, offset)
 	if err != nil {
@@ -70,9 +75,12 @@ func (pc *PostController) GetPosts(w http.ResponseWriter, r *http.Request) {
 func (pc *PostController) GetOnePost(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	post, err := pc.PostRepo.FindByID(id)
-	if err != nil {
+	if err != nil && err != postNotfound {
 		render.Render(w, r, ErrServerInternal(err))
 		return
+	}
+	if err == postNotfound {
+		post.Content = "ЗАГЛУШКА! ПОСТа с этим id не существует!"
 	}
 	post.Content = template.HTML(bf.Run([]byte(post.Content))) // use blackfriday for markdown to html view
 	data := templateOnePostFill{

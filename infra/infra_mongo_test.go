@@ -95,7 +95,7 @@ func TestFind(t *testing.T) {
 func TestSave(t *testing.T) {
 	tests := []struct {
 		name    string
-		doc     domain.PostInBlog
+		post    domain.PostInBlog
 		wantErr bool
 	}{
 		{"first-insert", domain.PostInBlog{
@@ -112,7 +112,7 @@ func TestSave(t *testing.T) {
 	repo.session = session
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := repo.Save(tt.doc)
+			_, err := repo.Save(tt.post)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Save() error = %v, wantErr %v", err, tt.wantErr)
 				return
