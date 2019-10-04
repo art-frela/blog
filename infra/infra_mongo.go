@@ -36,7 +36,11 @@ func NewMongoPostRepo(mongoURL string, logger *logrus.Logger, countExamplePosts 
 	repo.collectionName = postCollectionName // TODO: get from config
 	repo.database = postDataBaseName         // TODO: set from config
 	repo.log = logger
-	repo.connDB() // set session
+	session, err := repo.connDB()
+	if err != nil {
+		repo.log.Fatalf("connect to mongoDB error, %v", err)
+	}
+	repo.session = session
 	if clearStorage {
 		c := repo.collection(repo.collectionName)
 		c.Drop(context.TODO())
@@ -118,24 +122,24 @@ func (mpr *MongoPostRepo) Update(p domain.PostInBlog) error {
 }
 
 // connDB - connects to mongoDB and sets session propertie
-func (mpr *MongoPostRepo) connDB() {
+func (mpr *MongoPostRepo) connDB() (*mongo.Client, error) {
 	// make session
 	session, err := mongo.NewClient(options.Client().SetAppName(servicename + ":" + version).ApplyURI(mpr.mongoURL))
 	if err != nil {
-		mpr.log.Fatalf("Mongo.NewClient (%s) error, %v", mpr.mongoURL, err)
+		return nil, fmt.Errorf("Mongo.NewClient (%s) error, %v", mpr.mongoURL, err)
 	}
 	// Create connect
 	err = session.Connect(context.TODO())
 	if err != nil {
-		mpr.log.Fatalf("Mongo.Client.Connect to (%s) error, %v", mpr.mongoURL, err)
+		return nil, fmt.Errorf("Mongo.Client.Connect to (%s) error, %v", mpr.mongoURL, err)
 	}
 	// Check the connection
 	err = session.Ping(context.TODO(), nil)
 	if err != nil {
-		mpr.log.Fatalf("Mongo.Client.Ping to (%s) error, %v", mpr.mongoURL, err)
+		return nil, fmt.Errorf("Mongo.Client.Ping to (%s) error, %v", mpr.mongoURL, err)
 	}
-	mpr.session = session
 	mpr.log.Debugf("Mongo.Client.Connect+Ping to (%s) success", mpr.mongoURL)
+	return session, nil
 }
 
 // collection - returns new collection
