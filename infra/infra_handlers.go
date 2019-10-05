@@ -121,7 +121,18 @@ func (pc *PostController) WriteNewPost(w http.ResponseWriter, r *http.Request) {
 	tmpl.ExecuteTemplate(w, "indexNewPOST", data)
 }
 
-// UpdPost - handler func for update post in the Storage
+// UpdPost - handler func for update post in repository
+// @Summary update post in repository
+// @Description handler func for update post in repository
+// @Tags blog.posts
+// @Accept json
+// @Produce json
+// @Param id path string true "id like this 5d90b1d3242abfd8fa7f8cc4"
+// @Param post body infra.NewPostRequest  true "New Post content"
+// @Success 200 {object} infra.SuccessResponse
+// @Failure 400 {object} infra.ErrResponse
+// @Failure 500 {object} infra.ErrResponse
+// @Router /posts/{id} [put]
 func (pc *PostController) UpdPost(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	params := &NewPostRequest{}
@@ -163,7 +174,16 @@ func (pc *PostController) UpdPost(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, r, OkStatus(id))
 }
 
-// AddNewPost - handler func for save new post in the storage
+// AddNewPost save new post to repository
+// @Summary save new post to repository
+// @Description handler func for save new post in the storage
+// @Tags blog.posts
+// @Accept json
+// @Produce json
+// @Param post body infra.NewPostRequest  true "New Post content"
+// @Success 201 {object} infra.SuccessResponse
+// @Failure 500 {object} infra.ErrResponse
+// @Router /posts [post]
 func (pc *PostController) AddNewPost(w http.ResponseWriter, r *http.Request) {
 	params := &NewPostRequest{}
 	if err := render.Bind(r, params); err != nil {

@@ -2,6 +2,7 @@ package infra
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -10,10 +11,12 @@ import (
 
 	"github.com/art-frela/blog/domain"
 
+	_ "github.com/art-frela/blog/docs"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
 	"github.com/sirupsen/logrus"
+	swag "github.com/swaggo/http-swagger"
 )
 
 // BlogServer -
@@ -60,7 +63,7 @@ func NewPostStorage(storageType string, storageURL string, logger *logrus.Logger
 // Run is running blogServer
 func (bs *BlogServer) Run(hostPort string) *http.Server {
 	srv := &http.Server{Addr: hostPort, Handler: bs.mux}
-	bs.registerRoutes()
+	bs.registerRoutes(hostPort)
 	bs.log.Infof("http server starting on the [%s] tcp port", hostPort)
 	go func() {
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
@@ -80,7 +83,11 @@ func (bs *BlogServer) Stop(srv *http.Server) {
 	}
 }
 
-func (bs *BlogServer) registerRoutes() {
+func (bs *BlogServer) registerRoutes(hostPort string) {
+	uri := fmt.Sprintf("http://%s/swagger/doc.json", hostPort)
+	bs.mux.Get("/swagger/*", swag.Handler(
+		swag.URL(uri), //The url pointing to API definition"
+	))
 	bs.mux.Route("/posts", func(r chi.Router) {
 		r.Get("/", bs.controller.GetPosts)
 		r.Get("/{id}", bs.controller.GetOnePost)

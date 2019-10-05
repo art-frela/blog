@@ -1,0 +1,110 @@
+basePath: /api/v1
+definitions:
+  infra.ErrResponse:
+    properties:
+      code:
+        type: integer
+      error:
+        type: string
+      status:
+        type: string
+    type: object
+  infra.NewPostRequest:
+    properties:
+      content:
+        type: string
+      rubric_id:
+        type: string
+      title:
+        type: string
+      user_id:
+        type: string
+    type: object
+  infra.SuccessResponse:
+    properties:
+      httpcode:
+        type: integer
+      message:
+        type: string
+      status:
+        type: string
+    type: object
+host: '{{.Host}}'
+info:
+  contact:
+    email: art.frela@gmail.com
+    url: https://github.com/art-frela
+  description: This is a simple blog server.
+  license: {}
+  title: Blog API
+  version: "1.0"
+paths:
+  /posts:
+    post:
+      consumes:
+      - application/json
+      description: handler func for save new post in the storage
+      parameters:
+      - description: New Post content
+        in: body
+        name: post
+        required: true
+        schema:
+          $ref: '#/definitions/infra.NewPostRequest'
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/infra.SuccessResponse'
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/infra.ErrResponse'
+            type: object
+      summary: save new post to repository
+      tags:
+      - blog.posts
+  /posts/{id}:
+    put:
+      consumes:
+      - application/json
+      description: handler func for update post in repository
+      parameters:
+      - description: id like this 5d90b1d3242abfd8fa7f8cc4
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New Post content
+        in: body
+        name: post
+        required: true
+        schema:
+          $ref: '#/definitions/infra.NewPostRequest'
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/infra.SuccessResponse'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/infra.ErrResponse'
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/infra.ErrResponse'
+            type: object
+      summary: update post in repository
+      tags:
+      - blog.posts
+swagger: "2.0"
