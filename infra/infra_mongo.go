@@ -12,30 +12,23 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-//
-const (
-	servicename        = "blog"
-	version            = "0.0.3"
-	postCollectionName = "posts"
-	postDataBaseName   = "blog"
-)
-
 // MongoPostRepo implementation of domain post repository
 type MongoPostRepo struct {
 	mongoURL       string
 	database       string
 	collectionName string
 	session        *mongo.Client
-	log            *logrus.Logger
+	log            *logrus.Entry
 }
 
 // NewMongoPostRepo builder of MongoDB post repository implementation
-func NewMongoPostRepo(mongoURL string, logger *logrus.Logger, countExamplePosts int, clearStorage bool) *MongoPostRepo {
+func NewMongoPostRepo(databaseURL, database string, logger *logrus.Entry, countExamplePosts int, clearStorage bool) *MongoPostRepo {
 	repo := &MongoPostRepo{}
-	repo.mongoURL = mongoURL
-	repo.collectionName = postCollectionName // TODO: get from config
-	repo.database = postDataBaseName         // TODO: set from config
-	repo.log = logger
+	p := &domain.PostInBlog{}
+	repo.mongoURL = databaseURL
+	repo.collectionName = p.TableCollectionName()
+	repo.database = database
+	repo.log = logger.WithField("database", database)
 	session, err := repo.connDB()
 	if err != nil {
 		repo.log.Fatalf("connect to mongoDB error, %v", err)
@@ -124,7 +117,7 @@ func (mpr *MongoPostRepo) Update(p domain.PostInBlog) error {
 // connDB - connects to mongoDB and sets session propertie
 func (mpr *MongoPostRepo) connDB() (*mongo.Client, error) {
 	// make session
-	session, err := mongo.NewClient(options.Client().SetAppName(servicename + ":" + version).ApplyURI(mpr.mongoURL))
+	session, err := mongo.NewClient(options.Client().SetAppName("blog:v1").ApplyURI(mpr.mongoURL))
 	if err != nil {
 		return nil, fmt.Errorf("Mongo.NewClient (%s) error, %v", mpr.mongoURL, err)
 	}

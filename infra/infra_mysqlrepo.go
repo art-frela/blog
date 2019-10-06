@@ -18,14 +18,14 @@ import (
 // MySQLPostRepository - post repository implementation
 type MySQLPostRepository struct {
 	db  *sql.DB
-	log *logrus.Logger
+	log *logrus.Entry
 	ctx context.Context
 }
 
 // NewMySQLPostRepository returns MySQL post repository
-func NewMySQLPostRepository(mysqlURL string, logger *logrus.Logger, countExamplePosts int, clearStorage bool) *MySQLPostRepository {
+func NewMySQLPostRepository(mysqlURL, database string, logger *logrus.Entry, countExamplePosts int, clearStorage bool) *MySQLPostRepository {
 	repo := &MySQLPostRepository{}
-	repo.log = logger
+	repo.log = logger.WithField("database", database)
 	db, err := sql.Open("mysql", mysqlURL)
 	if err != nil {
 		repo.log.Fatalf("error open mysql, %v", err)

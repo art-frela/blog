@@ -11,30 +11,42 @@ import (
 
 	"github.com/art-frela/blog/domain"
 
-	_ "github.com/art-frela/blog/docs"
+	_ "github.com/art-frela/blog/docs" // docs is swagger generated file, don't modified it!
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	swag "github.com/swaggo/http-swagger"
+)
+
+// ContextID is our type to retrieve our context
+// objects
+type contextStatusID int
+
+const (
+	StatusCtxKey contextStatusID = 0
 )
 
 // BlogServer -
 type BlogServer struct {
-	log        *logrus.Logger
+	log        *logrus.Entry
 	mux        *chi.Mux
 	controller *PostController
+	config     *viper.Viper
+	srv        *http.Server
 }
 
 // NewBlogServer is builder for BlogServer
-func NewBlogServer(storageURL string, countExamplePosts int, clearStorage bool) *BlogServer {
+func NewBlogServer(countExamplePosts int, clearStorage bool) *BlogServer {
 	bs := &BlogServer{}
-	logger := logrus.New()
-	storageType := defineStorageType(storageURL)
-	pr := NewPostStorage(storageType, storageURL, logger, countExamplePosts, clearStorage)
+	bs.setConfig()
+	bs.setLogger("0.0.2")
+	storageType := defineStorageType(bs.config.GetString("database.url"))
+	pr := NewPostStorage(storageType, bs.config.GetString("database.url"), bs.config.GetString("database.name"), bs.log, countExamplePosts, clearStorage)
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
-	r.Use(middleware.Logger)
+	//r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(customHTTPLogger)
 	// add aka fileserver
@@ -45,23 +57,23 @@ func NewBlogServer(storageURL string, countExamplePosts int, clearStorage bool) 
 	filesDir = filepath.Join(".", "assets/img")
 	FileServer(r, "/img", http.Dir(filesDir))
 	bs.mux = r
-	bs.log = logger
 	bs.controller = NewPostController(pr)
 	return bs
 }
 
 // NewPostStorage looks like AbstractFactory of PostRepositories
-func NewPostStorage(storageType string, storageURL string, logger *logrus.Logger, countExamplePosts int, clearStorage bool) domain.PostRepository {
+func NewPostStorage(storageType string, storageURL, database string, logger *logrus.Entry, countExamplePosts int, clearStorage bool) domain.PostRepository {
 	switch storageType {
 	case "mysql":
-		return NewMySQLPostRepository(storageURL, logger, countExamplePosts, clearStorage)
+		return NewMySQLPostRepository(storageURL, database, logger, countExamplePosts, clearStorage)
 	default:
-		return NewMongoPostRepo(storageURL, logger, countExamplePosts, clearStorage)
+		return NewMongoPostRepo(storageURL, database, logger, countExamplePosts, clearStorage)
 	}
 }
 
 // Run is running blogServer
-func (bs *BlogServer) Run(hostPort string) *http.Server {
+func (bs *BlogServer) Run() {
+	hostPort := fmt.Sprintf("%s:%s", bs.config.GetString("httpd.host"), bs.config.GetString("httpd.port"))
 	srv := &http.Server{Addr: hostPort, Handler: bs.mux}
 	bs.registerRoutes(hostPort)
 	bs.log.Infof("http server starting on the [%s] tcp port", hostPort)
@@ -70,15 +82,15 @@ func (bs *BlogServer) Run(hostPort string) *http.Server {
 			bs.log.Fatalf("http server error: %v", err)
 		}
 	}()
-	return srv
+	bs.srv = srv
 }
 
 // Stop is stopping blogServer
-func (bs *BlogServer) Stop(srv *http.Server) {
+func (bs *BlogServer) Stop() {
 	bs.log.Info("http server stopping")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := bs.srv.Shutdown(ctx); err != nil {
 		bs.log.Errorf("http server stopping error, %v", err)
 	}
 }
@@ -122,25 +134,46 @@ func filterContentType(next http.Handler) http.Handler {
 				return
 			}
 		}
+
 		next.ServeHTTP(w, r)
 	})
+}
+
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+}
+
+func (rec *statusRecorder) WriteHeader(code int) {
+	rec.status = code
+	rec.ResponseWriter.WriteHeader(code)
 }
 
 // customHTTPLogger - middleware to logrus logger
 func customHTTPLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cw := statusRecorder{w, http.StatusOK}
 		start := time.Now()
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(&cw, r)
 		duration := time.Since(start).String()
-		host, _ := os.Hostname()
-		logrus.WithFields(logrus.Fields{
-			"method": r.Method,
-			"proto":  r.Proto,
-			"remote": r.RemoteAddr,
-			"url":    r.RequestURI,
-			//"code":     r.Response.StatusCode,
+		log := logrus.WithFields(logrus.Fields{
+			"method":   r.Method,
+			"proto":    r.Proto,
+			"remote":   r.RemoteAddr,
+			"url":      r.RequestURI,
+			"code":     cw.status,
 			"duration": duration,
-		}).Infof("%s", host)
+		})
+
+		host, _ := os.Hostname()
+		switch {
+		case cw.status < 300:
+			log.Infof("%s", host)
+		case cw.status > 300 && cw.status < 400:
+			log.Warnf("%s", host)
+		case cw.status >= 400:
+			log.Errorf("%s", host)
+		}
 	})
 }
 

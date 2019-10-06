@@ -5,7 +5,7 @@
 * [x] add MySQL storage
 * [x] separete api methods and web
 * [x] add MongoDB storage
-* [ ] add using BeeGo framework
+* [-] add using BeeGo framework
 * [ ] add config app
 * [ ] add clear logging
 * [ ] add metrics (Prometheus), business and techics

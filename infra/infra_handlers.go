@@ -1,6 +1,7 @@
 package infra
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -67,6 +68,8 @@ func (pc *PostController) GetPosts(w http.ResponseWriter, r *http.Request) {
 		Title: "POSTS",
 		Posts: posts,
 	}
+	ctx := context.WithValue(r.Context(), StatusCtxKey, http.StatusOK)
+	r.WithContext(ctx)
 	tmpl := template.Must(template.New("indexPOST").ParseGlob(templatePATH))
 	tmpl.ExecuteTemplate(w, "indexPOST", data)
 }
@@ -118,6 +121,8 @@ func (pc *PostController) WriteNewPost(w http.ResponseWriter, r *http.Request) {
 		Post:  post,
 	}
 	tmpl := template.Must(template.New("indexNewPOST").ParseGlob(templatePATH))
+
+	w.WriteHeader(http.StatusOK)
 	tmpl.ExecuteTemplate(w, "indexNewPOST", data)
 }
 

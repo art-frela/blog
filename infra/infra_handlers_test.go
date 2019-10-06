@@ -22,7 +22,7 @@ func TestGetPosts(t *testing.T) {
 		{"posts-negative-values", -10, -5, http.StatusOK},
 	}
 	templatePATH = "../assets/templates/*.html"
-	blogSRV := NewBlogServer("mongodb://elk-01.watcom.local:27017", 0, false)
+	blogSRV := NewBlogServer(0, false)
 	ws := blogSRV.Run(":8888")
 
 	for _, tt := range tests {

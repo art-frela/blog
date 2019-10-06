@@ -53,6 +53,11 @@ type PostRepository interface {
 	//DeletePost(p PostInBlog) (bool, error)
 }
 
+// TableCollectionName - returns table or collection name for Posts
+func (p *PostInBlog) TableCollectionName() string {
+	return "posts"
+}
+
 // [Setters fo PostInBlog]
 
 // SetID - setter for ID
@@ -204,6 +209,11 @@ type UserRepository interface {
 	Find() ([]User, error)
 	Update(u User) error
 	Delete(u User) error
+}
+
+// TableCollectionName - returns table or collection name for Users
+func (ur *User) TableCollectionName() string {
+	return "users"
 }
 
 // isAdmin - checks admin privileges
