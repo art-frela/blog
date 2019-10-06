@@ -4,7 +4,7 @@ httpd:
     port: "8888"
     host: 'localhost'
 swagger:
-    host: 'localhost'
+    host: 'art-frela.ru'
 database:
     url: 'mongodb://elk-01.watcom.local:27017'
     name: blog

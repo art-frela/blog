@@ -97,6 +97,7 @@ func (bs *BlogServer) Stop() {
 
 func (bs *BlogServer) registerRoutes() {
 	uri := fmt.Sprintf("http://%s:%s/swagger/doc.json", bs.config.GetString("swagger.host"), bs.config.GetString("httpd.port"))
+	bs.log.Debugf("set swagger uri:%s", uri)
 	bs.mux.Get("/swagger/*", swag.Handler(
 		swag.URL(uri), //The url pointing to API definition"
 	))
