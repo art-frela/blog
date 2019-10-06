@@ -75,7 +75,7 @@ func NewPostStorage(storageType string, storageURL, database string, logger *log
 func (bs *BlogServer) Run() {
 	hostPort := fmt.Sprintf("%s:%s", bs.config.GetString("httpd.host"), bs.config.GetString("httpd.port"))
 	srv := &http.Server{Addr: hostPort, Handler: bs.mux}
-	bs.registerRoutes(hostPort)
+	bs.registerRoutes()
 	bs.log.Infof("http server starting on the [%s] tcp port", hostPort)
 	go func() {
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
@@ -95,8 +95,8 @@ func (bs *BlogServer) Stop() {
 	}
 }
 
-func (bs *BlogServer) registerRoutes(hostPort string) {
-	uri := fmt.Sprintf("http://%s/swagger/doc.json", hostPort)
+func (bs *BlogServer) registerRoutes() {
+	uri := fmt.Sprintf("http://%s:%s/swagger/doc.json", bs.config.GetString("swagger.host"), bs.config.GetString("swagger.port"))
 	bs.mux.Get("/swagger/*", swag.Handler(
 		swag.URL(uri), //The url pointing to API definition"
 	))
