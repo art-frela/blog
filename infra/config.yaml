@@ -10,4 +10,4 @@ database:
 env: develop
 log:
     level: debug
-    file:
+    file: 

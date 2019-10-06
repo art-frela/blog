@@ -39,7 +39,7 @@ func (bs *BlogServer) setLogger(version string) {
 	if bs.config.GetString("log.file") != "" || bs.config.GetString("log.file") != "stdout" {
 		f, err := os.Create(bs.config.GetString("log.file"))
 		if err != nil {
-			log.Errorf("open log file [%s] error, %v", err)
+			log.Errorf("open log file [%s] error, %v", bs.config.GetString("log.file"), err)
 		} else {
 			logrus.SetOutput(f)
 		}

@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	logger = logrus.NewEntry()
+	logger = logrus.NewEntry(&logrus.Logger{})
 	repo   = &MongoPostRepo{
 		mongoURL:       "mongodb://elk-01.watcom.local:27017",
 		log:            logger,

@@ -23,7 +23,7 @@ func TestGetPosts(t *testing.T) {
 	}
 	templatePATH = "../assets/templates/*.html"
 	blogSRV := NewBlogServer(0, false)
-	ws := blogSRV.Run(":8888")
+	blogSRV.Run()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -42,7 +42,7 @@ func TestGetPosts(t *testing.T) {
 		})
 	}
 
-	blogSRV.Stop(ws)
+	blogSRV.Stop()
 }
 
 // func TestGetOnePost(t *testing.T) {
@@ -88,8 +88,8 @@ func TestAddNewPost(t *testing.T) {
 		{"post-new2-post", `{"title":"2nd"}`, http.StatusBadRequest},
 	}
 	templatePATH = "../assets/templates/*.html"
-	blogSRV := NewBlogServer("mongodb://elk-01.watcom.local:27017", 0, false)
-	ws := blogSRV.Run(":8888")
+	blogSRV := NewBlogServer(0, false)
+	blogSRV.Run()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -110,5 +110,5 @@ func TestAddNewPost(t *testing.T) {
 		})
 	}
 
-	blogSRV.Stop(ws)
+	blogSRV.Stop()
 }
